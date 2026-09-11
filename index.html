@@ -1,0 +1,1428 @@
+<title>컬러 매치</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#f3f1ec;
+    --surface:#ffffff;
+    --surface-2:#ece7dc;
+    --border:#dcd5c3;
+    --ink:#201f1c;
+    --ink-dim:#726c5c;
+    --ink-faint:#9a947f;
+    --accent:#1d3557;
+    --accent-ink:#ffffff;
+    --accent-soft:#e2e7f0;
+    --signal:#b8460b;
+    --signal-soft:#f5e4d8;
+    --good:#2f6f4e;
+    --good-soft:#dfe9e0;
+    --shadow: 0 1px 2px rgba(32,31,28,.06), 0 8px 24px -12px rgba(32,31,28,.18);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#17181b; --surface:#1e2024; --surface-2:#26282d; --border:#383a41;
+      --ink:#ece9e1; --ink-dim:#a5a091; --ink-faint:#736f61;
+      --accent:#8ea3d4; --accent-ink:#12182a; --accent-soft:#26314a;
+      --signal:#e2894f; --signal-soft:#3a2c22; --good:#7cbe9a; --good-soft:#20302a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17181b; --surface:#1e2024; --surface-2:#26282d; --border:#383a41;
+    --ink:#ece9e1; --ink-dim:#a5a091; --ink-faint:#736f61;
+    --accent:#8ea3d4; --accent-ink:#12182a; --accent-soft:#26314a;
+    --signal:#e2894f; --signal-soft:#3a2c22; --good:#7cbe9a; --good-soft:#20302a;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+
+  *{ box-sizing:border-box; }
+  body{ background:var(--bg); color:var(--ink); font-family:'IBM Plex Sans KR','IBM Plex Sans',system-ui,sans-serif; line-height:1.45; }
+  .mono{ font-family:'IBM Plex Mono',ui-monospace,'SFMono-Regular',monospace; font-variant-numeric:tabular-nums; }
+  button{ font-family:inherit; }
+  [hidden]{ display:none !important; }
+
+  /* ---------- auth gate ---------- */
+  .auth-gate{ position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .auth-card{ width:100%; max-width:340px; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); padding:28px 26px 24px; display:flex; flex-direction:column; gap:12px; text-align:center; }
+  .auth-card .eyebrow{ font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-dim); font-weight:600; }
+  .auth-card h1{ margin:0; font-size:24px; font-weight:700; }
+  .auth-card p{ margin:0; font-size:13px; color:var(--ink-dim); }
+  #auth-code{ font-family:'IBM Plex Mono',monospace; font-size:26px; letter-spacing:.5em; text-align:center; padding:10px 8px 10px 14px; border-radius:10px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink); width:100%; }
+  #auth-code:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .auth-card button.primary{ background:var(--accent); color:var(--accent-ink); border:none; border-radius:10px; padding:11px; font-size:14px; font-weight:600; cursor:pointer; }
+  .auth-card button.primary:active{ transform:translateY(1px); }
+  .auth-error{ color:var(--signal) !important; font-weight:600; font-size:12.5px !important; }
+  .auth-hint{ font-size:11.5px !important; color:var(--ink-faint) !important; border-top:1px solid var(--border); padding-top:10px; margin-top:4px !important; }
+  .shake{ animation:shake .3s; }
+  @keyframes shake{ 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+  .page{ max-width:1180px; margin:0 auto; padding:28px 24px 64px; }
+
+  header.top{ display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:18px; }
+  .brand{ display:flex; flex-direction:column; gap:4px; }
+  .brand .eyebrow{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-dim); font-weight:600; }
+  .brand h1{ margin:0; font-size:28px; font-weight:700; letter-spacing:-.01em; text-wrap:balance; }
+  .stats{ display:flex; gap:10px; flex-wrap:wrap; }
+  .stat{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px 14px; text-align:center; min-width:78px; box-shadow:var(--shadow); }
+  .stat b{ display:block; font-family:'IBM Plex Mono',monospace; font-size:18px; font-variant-numeric:tabular-nums; }
+  .stat span{ font-size:11px; color:var(--ink-dim); }
+
+  .notice{ display:flex; gap:10px; align-items:flex-start; background:var(--signal-soft); border:1px solid color-mix(in srgb, var(--signal) 35%, var(--border)); color:var(--ink); border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:18px; }
+  .notice b{ color:var(--signal); }
+  .notice.good{ background:var(--good-soft); border-color:color-mix(in srgb, var(--good) 35%, var(--border)); }
+  .notice.good b{ color:var(--good); }
+
+  /* ---------- tabs ---------- */
+  .tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; border-bottom:1px solid var(--border); padding-bottom:0; }
+  .tab-btn{ background:none; border:1px solid transparent; border-bottom:none; color:var(--ink-dim); font-size:13.5px; font-weight:600; padding:9px 15px; border-radius:10px 10px 0 0; cursor:pointer; margin-bottom:-1px; }
+  .tab-btn[aria-selected="true"]{ background:var(--surface); border-color:var(--border); color:var(--ink); }
+  .tab-btn:hover:not([aria-selected="true"]){ color:var(--ink); }
+
+  .layout{ display:grid; grid-template-columns:minmax(340px,1fr) minmax(360px,1.1fr); gap:20px; align-items:start; }
+  @media (max-width:880px){ .layout{ grid-template-columns:1fr; } }
+
+  .panel{ background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; }
+  .panel-head{ padding:16px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .panel-head h2{ margin:0; font-size:14px; font-weight:600; letter-spacing:.01em; }
+  .panel-body{ padding:18px; display:flex; flex-direction:column; gap:16px; }
+
+  .swatch-wrap{ display:flex; gap:14px; align-items:center; }
+  .convert-btn{ margin-left:auto; width:46px; height:46px; border-radius:12px; border:none; background:var(--accent); color:var(--accent-ink); font-size:20px; font-weight:700; cursor:pointer; flex:none; box-shadow:var(--shadow); }
+  .convert-btn:hover{ opacity:.9; }
+  .convert-btn:active{ transform:translateY(1px); }
+  .swatch{ width:96px; height:96px; border-radius:14px; border:1px solid var(--border); flex:none; box-shadow:inset 0 0 0 1px rgba(0,0,0,.03); }
+  .swatch-info{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .swatch-info .hexval{ font-size:20px; font-weight:600; }
+  .swatch-info .subline{ font-size:12px; color:var(--ink-dim); }
+  .badge-row{ display:flex; gap:6px; flex-wrap:wrap; margin-top:2px; }
+  .badge{ font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:999px; }
+  .badge-ref{ background:var(--signal-soft); color:var(--signal); }
+  .badge-gamut{ background:var(--signal-soft); color:var(--signal); }
+  .badge-ok{ background:var(--good-soft); color:var(--good); }
+
+  fieldset.group{ border:1px solid var(--border); border-radius:12px; padding:12px 14px 14px; background:var(--surface-2); }
+  fieldset.group legend{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); padding:0 6px; }
+  .row{ display:grid; gap:8px; }
+  .row.cols-3{ grid-template-columns:repeat(3,1fr); }
+  .row.cols-4{ grid-template-columns:repeat(4,1fr); }
+  .field{ display:flex; flex-direction:column; gap:4px; }
+  .field label{ font-size:10.5px; color:var(--ink-faint); }
+  .field input, .field select{
+    font-family:'IBM Plex Mono',monospace; font-size:14px; font-variant-numeric:tabular-nums;
+    padding:7px 9px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink);
+    width:100%;
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
+  .field.wide{ grid-column:1/-1; }
+  .hint{ font-size:11px; color:var(--ink-faint); margin-top:2px; }
+
+  .filter-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+  .chip{ font-size:12px; padding:5px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--ink-dim); cursor:pointer; }
+  .chip[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600; }
+
+  .cb-select{ font-size:12px; padding:5px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink-dim); }
+
+  .best{ display:flex; gap:14px; padding:14px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); align-items:center; }
+  .best .chip-swatch{ width:64px; height:64px; border-radius:10px; border:1px solid var(--border); flex:none; }
+  .best .meta{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .best .code{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:15px; }
+  .best .name{ font-size:12.5px; color:var(--ink-dim); }
+  .best .de{ margin-left:auto; text-align:right; align-self:center; flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .best .de b{ font-family:'IBM Plex Mono',monospace; font-size:22px; font-variant-numeric:tabular-nums; }
+  .best .de span{ display:block; font-size:10.5px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.05em; }
+
+  .star-btn{ background:none; border:1px solid var(--border); width:30px; height:30px; border-radius:8px; cursor:pointer; color:var(--ink-faint); font-size:15px; flex:none; }
+  .star-btn.active{ color:var(--signal); border-color:var(--signal); background:var(--signal-soft); }
+
+  .match-list{ display:flex; flex-direction:column; gap:0; border-top:1px solid var(--border); }
+  .match-row{ display:flex; align-items:center; gap:10px; padding:10px 4px; border-bottom:1px solid var(--border); }
+  .match-row .chip-swatch{ width:34px; height:34px; border-radius:8px; border:1px solid var(--border); flex:none; }
+  .match-row .code{ font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; min-width:96px; }
+  .match-row .name{ font-size:12.5px; color:var(--ink-dim); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .match-row .series-pill{ font-size:10.5px; padding:2px 7px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-weight:600; flex:none; }
+  .match-row .de-val{ font-family:'IBM Plex Mono',monospace; font-size:13px; font-variant-numeric:tabular-nums; min-width:44px; text-align:right; flex:none; }
+  .de-tag-good{ color:var(--good); }
+  .de-tag-mid{ color:var(--ink-dim); }
+  .de-tag-hi{ color:var(--signal); }
+
+  /* ---------- image tab ---------- */
+  .drop-zone{ border:2px dashed var(--border); border-radius:14px; padding:26px; text-align:center; color:var(--ink-dim); font-size:13px; cursor:pointer; background:var(--surface-2); }
+  .drop-zone.drag{ border-color:var(--accent); color:var(--accent); }
+  .canvas-wrap{ position:relative; border:1px solid var(--border); border-radius:12px; overflow:hidden; line-height:0; background:var(--surface-2); }
+  #img-canvas{ width:100%; height:auto; display:block; cursor:crosshair; }
+  .loupe{ position:absolute; width:100px; height:100px; border-radius:50%; border:2px solid var(--surface); box-shadow:0 4px 16px rgba(0,0,0,.35); pointer-events:none; overflow:hidden; display:none; z-index:5; }
+  .loupe canvas{ width:100%; height:100%; image-rendering:pixelated; }
+  .loupe::after{ content:""; position:absolute; inset:0; border:1px solid rgba(255,255,255,.5); border-radius:50%; box-shadow:inset 0 0 0 24px rgba(255,255,255,0), 0 0 0 1px rgba(0,0,0,.15) inset; }
+  .kmeans-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .kmeans-swatch{ width:52px; height:52px; border-radius:10px; border:1px solid var(--border); cursor:pointer; flex:none; }
+  .btn{ background:var(--accent); color:var(--accent-ink); border:none; border-radius:9px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; }
+  .btn.ghost{ background:var(--surface); color:var(--ink); border:1px solid var(--border); }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+  /* ---------- random palette tab ---------- */
+  .random-wrap{ display:flex; flex-direction:column; gap:14px; }
+  .random-bands{ display:flex; gap:6px; height:min(56vh, 460px); border-radius:14px; overflow:hidden; border:1px solid var(--border); }
+  .band{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:12px 8px; gap:8px; position:relative; cursor:pointer; transition:flex .18s; }
+  .band.locked{ flex:1.06; }
+  .band .lock-btn{ position:absolute; top:10px; right:10px; width:30px; height:30px; border-radius:8px; border:1px solid rgba(255,255,255,.4); background:rgba(0,0,0,.28); color:#fff; font-size:14px; cursor:pointer; backdrop-filter:blur(2px); }
+  .band .lock-btn.on{ background:rgba(0,0,0,.55); border-color:#fff; }
+  .band .band-code{ background:rgba(0,0,0,.4); color:#fff; font-size:12px; font-weight:600; padding:4px 9px; border-radius:999px; backdrop-filter:blur(2px); }
+  .band .band-de{ background:rgba(0,0,0,.32); color:#fff; font-size:10.5px; padding:2px 8px; border-radius:999px; }
+  .random-actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .mode-toggle{ display:flex; border:1px solid var(--border); border-radius:9px; overflow:hidden; }
+  .mode-toggle button{ background:var(--surface); border:none; padding:9px 14px; font-size:12.5px; font-weight:600; color:var(--ink-dim); cursor:pointer; }
+  .mode-toggle button[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); }
+  .save-row{ display:flex; gap:8px; align-items:center; }
+  .save-row input{ font-size:13px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink); width:180px; }
+
+  /* ---------- saved tab ---------- */
+  .saved-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+  .saved-section-title{ font-size:13px; font-weight:700; margin:0 0 10px; }
+  .fav-row, .hist-row{ display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--border); }
+  .fav-row .sw, .hist-row .sw{ width:30px; height:30px; border-radius:7px; border:1px solid var(--border); flex:none; cursor:pointer; }
+  .fav-row .lbl, .hist-row .lbl{ flex:1; min-width:0; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+  .fav-row .del{ background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:14px; }
+  .proj-card{ border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--surface-2); display:flex; flex-direction:column; gap:8px; }
+  .proj-swatches{ display:flex; gap:4px; }
+  .proj-swatches span{ flex:1; height:28px; border-radius:6px; }
+  .proj-name{ font-size:13px; font-weight:600; }
+  .proj-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .proj-actions button{ font-size:11.5px; padding:5px 9px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--ink-dim); cursor:pointer; }
+  .empty-hint{ font-size:12.5px; color:var(--ink-faint); padding:8px 4px; }
+  .pager{ display:flex; align-items:center; justify-content:center; gap:12px; padding-top:10px; margin-top:4px; }
+  .pager button{ font-size:12px; padding:5px 11px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--ink); cursor:pointer; }
+  .pager button:disabled{ opacity:.4; cursor:not-allowed; }
+  .pager-info{ font-size:12px; color:var(--ink-dim); }
+
+  /* ---------- stats tab ---------- */
+  .stats-bars{ display:flex; flex-direction:column; gap:8px; }
+  .bar-row{ display:grid; grid-template-columns:34px 150px 1fr 40px; align-items:center; gap:10px; }
+  .bar-swatch{ width:34px; height:34px; border-radius:8px; border:1px solid var(--border); flex:none; }
+  .bar-label{ display:flex; flex-direction:column; min-width:0; }
+  .bar-label .code{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; }
+  .bar-label .name{ font-size:11px; color:var(--ink-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bar-track{ height:16px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:999px; min-width:2px; }
+  .bar-count{ font-size:12px; text-align:right; color:var(--ink-dim); }
+
+  .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:9px 18px; border-radius:999px; font-size:13px; box-shadow:var(--shadow); z-index:60; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; }
+  .toast.show{ opacity:1; transform:translate(-50%,-6px); }
+
+  footer.foot{ margin-top:26px; font-size:11.5px; color:var(--ink-faint); border-top:1px solid var(--border); padding-top:14px; }
+  footer.foot p{ margin:0 0 4px; }
+
+  .theme-toggle-fab{ position:fixed; top:16px; right:16px; z-index:70; width:38px; height:38px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:16px; line-height:1; cursor:pointer; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center; }
+  .theme-toggle-fab:hover{ border-color:var(--accent); }
+</style>
+
+<button class="theme-toggle-fab" id="theme-toggle" type="button" title="라이트/다크 모드 전환" aria-label="라이트/다크 모드 전환">🌙</button>
+
+<div class="auth-gate" id="auth-gate">
+  <div class="auth-card">
+    <span class="eyebrow">컬러디자인팀 · 사내 도구</span>
+    <h1>컬러 매치</h1>
+    <p>사내 구성원 확인을 위해 4자리 코드를 입력해 주세요.</p>
+    <input id="auth-code" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+    <button class="primary" id="auth-submit">입장하기</button>
+    <p class="auth-error" id="auth-error" hidden>코드가 올바르지 않습니다. 다시 입력해 주세요.</p>
+    <p class="auth-hint">코드문의 내선 1585</p>
+  </div>
+</div>
+
+<div class="page" id="app" hidden>
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">컬러디자인팀 · 사내 컬러 변환 도구</span>
+      <h1>컬러 매치</h1>
+    </div>
+    <div class="stats">
+      <div class="stat"><b class="mono">2,150</b><span>전체 컬러</span></div>
+      <div class="stat"><b class="mono">950</b><span>SW-950 계열</span></div>
+      <div class="stat"><b class="mono">1,200</b><span>SW-1200 계열</span></div>
+    </div>
+  </header>
+
+  <div class="notice">
+    <span>⚠</span>
+    <span><b>샘플(더미) 컬러 데이터로 동작 중입니다.</b> 실제 삼화 컬러 950+1200색 엑셀 데이터를 전달해 주시면 동일한 구조(<code class="mono">colors-data.js</code>의 <code class="mono">window.SAMHWA_COLORS</code> 배열)로 교체하여 실측값으로 매칭하겠습니다. 먼셀 표기 변환 역시 근사식이며, 사내 변환 포뮬러 전달 시 정식 값으로 대체됩니다.</span>
+  </div>
+  <div class="notice" id="db-notice" hidden>
+    <span>ℹ</span>
+    <span>즐겨찾기·팔레트 공유·사내 통계는 이 화면을 <b>퍼블리시된 Artifact 링크</b>로 열었을 때만 여러 사용자 간에 공유됩니다. 지금은 이 브라우저에만 저장되는 로컬 모드로 동작 중입니다.</span>
+  </div>
+
+  <nav class="tabs" id="tabs" role="tablist">
+    <button class="tab-btn" data-tab="match" aria-selected="true" role="tab">컬러 매칭</button>
+    <button class="tab-btn" data-tab="image" aria-selected="false" role="tab">이미지 추출</button>
+    <button class="tab-btn" data-tab="random" aria-selected="false" role="tab">랜덤 팔레트</button>
+    <button class="tab-btn" data-tab="saved" aria-selected="false" role="tab">즐겨찾기 · 팔레트</button>
+    <button class="tab-btn" data-tab="stats" aria-selected="false" role="tab">사내 통계</button>
+  </nav>
+
+  <!-- ===== TAB: 컬러 매칭 ===== -->
+  <section class="tab-panel" data-panel="match">
+    <div class="layout">
+      <section class="panel" id="input-panel">
+        <div class="panel-head"><h2>컬러 값 입력</h2><span class="hint">값을 입력한 뒤 Enter 또는 → 버튼을 누르면 변환됩니다</span></div>
+        <div class="panel-body">
+          <div class="swatch-wrap">
+            <div class="swatch" id="swatch"></div>
+            <div class="swatch-info">
+              <span class="hexval mono" id="swatch-hex">#8FA6C8</span>
+              <span class="subline mono" id="swatch-lab">Lab 68.4 / 1.2 / -18.9</span>
+              <span class="subline" id="swatch-source">기본값</span>
+              <div class="badge-row" id="badge-row"></div>
+            </div>
+            <button class="convert-btn" id="convert-btn-main" type="button" title="변환 (Enter)" aria-label="컬러 값 변환">→</button>
+          </div>
+
+          <fieldset class="group" data-group="hex">
+            <legend>RGB HEX</legend>
+            <div class="row">
+              <div class="field wide">
+                <label for="in-hex">HEX 코드</label>
+                <input id="in-hex" data-group="hex" type="text" maxlength="7" placeholder="#8FA6C8" autocomplete="off" spellcheck="false">
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="group" data-group="lab">
+            <legend>CIE Lab (D65)</legend>
+            <div class="row cols-3">
+              <div class="field"><label for="in-L">L*</label><input id="in-L" data-group="lab" type="text" inputmode="decimal"></div>
+              <div class="field"><label for="in-a">a*</label><input id="in-a" data-group="lab" type="text" inputmode="decimal"></div>
+              <div class="field"><label for="in-b">b*</label><input id="in-b" data-group="lab" type="text" inputmode="decimal"></div>
+            </div>
+          </fieldset>
+
+          <fieldset class="group" data-group="xyz">
+            <legend>CIE XYZ (D65, 2°)</legend>
+            <div class="row cols-3">
+              <div class="field"><label for="in-X">X</label><input id="in-X" data-group="xyz" type="text" inputmode="decimal"></div>
+              <div class="field"><label for="in-Y">Y</label><input id="in-Y" data-group="xyz" type="text" inputmode="decimal"></div>
+              <div class="field"><label for="in-Z">Z</label><input id="in-Z" data-group="xyz" type="text" inputmode="decimal"></div>
+            </div>
+          </fieldset>
+
+          <fieldset class="group" data-group="cmyk">
+            <legend>CMYK (%)</legend>
+            <div class="row cols-4">
+              <div class="field"><label for="in-C">C</label><input id="in-C" data-group="cmyk" type="text" inputmode="decimal"></div>
+              <div class="field"><label for="in-M">M</label><input id="in-M" data-group="cmyk" type="text" inputmode="decimal"></div>
+              <div class="field"><label for="in-Ya">Y</label><input id="in-Ya" data-group="cmyk" type="text" inputmode="decimal"></div>
+              <div class="field"><label for="in-K">K</label><input id="in-K" data-group="cmyk" type="text" inputmode="decimal"></div>
+            </div>
+          </fieldset>
+
+          <fieldset class="group" data-group="munsell">
+            <legend>먼셀 (Munsell H V/C) · 근사값 (오차 있음)</legend>
+            <div class="row">
+              <div class="field wide">
+                <label for="in-munsell">표기법 예: 5R 4/14, N 8/</label>
+                <input id="in-munsell" data-group="munsell" type="text" placeholder="5R 4/14" autocomplete="off" spellcheck="false">
+              </div>
+            </div>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="panel" id="result-panel">
+        <div class="panel-head">
+          <h2>가장 유사한 삼화 컬러</h2>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <select class="cb-select" id="cb-select" title="색맹 시뮬레이션">
+              <option value="none">색맹 시뮬레이션: 없음</option>
+              <option value="protanopia">1형 (적색맹)</option>
+              <option value="deuteranopia">2형 (녹색맹)</option>
+              <option value="tritanopia">3형 (청색맹)</option>
+            </select>
+            <div class="filter-chips" id="filter-chips">
+              <button class="chip" data-series="all" aria-pressed="true">전체</button>
+              <button class="chip" data-series="SW-950" aria-pressed="false">950</button>
+              <button class="chip" data-series="SW-1200" aria-pressed="false">1200</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="best" id="best-match"></div>
+          <div class="match-list" id="match-list"></div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===== TAB: 이미지 추출 ===== -->
+  <section class="tab-panel" data-panel="image" hidden>
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-head"><h2>이미지 업로드</h2><span class="hint">이미지는 브라우저에서만 처리되며 서버에 저장되지 않습니다</span></div>
+        <div class="panel-body">
+          <div class="drop-zone" id="drop-zone">이미지를 드래그하거나 클릭해서 선택하세요 (JPG / PNG)</div>
+          <input type="file" id="img-file" accept="image/*" hidden>
+          <div class="canvas-wrap" id="canvas-wrap" hidden>
+            <canvas id="img-canvas"></canvas>
+            <div class="loupe" id="loupe"><canvas id="loupe-canvas" width="100" height="100"></canvas></div>
+          </div>
+          <p class="hint" id="image-hint" hidden>이미지 위에서 마우스를 움직이면 루페로 확대되고, 클릭하면 해당 지점 색을 채취합니다.</p>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>대표색 자동 추출</h2></div>
+        <div class="panel-body">
+          <button class="btn ghost" id="kmeans-btn" disabled>대표색 4~5개 추출 (k-means)</button>
+          <div class="kmeans-row" id="kmeans-row"></div>
+          <p class="hint">카메라 화이트밸런스·조명·압축의 영향으로 정확도가 낮을 수 있어 <span class="badge badge-ref" style="display:inline">참고용</span> 배지가 함께 표시됩니다. 스와치를 클릭하면 컬러 매칭 탭으로 이동해 가장 가까운 삼화 컬러를 확인합니다.</p>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===== TAB: 랜덤 팔레트 ===== -->
+  <section class="tab-panel" data-panel="random" hidden>
+    <section class="panel">
+      <div class="panel-head">
+        <h2>5색 랜덤 팔레트</h2>
+        <span class="hint">스페이스바로 재추첨 · 칸을 드래그해서 순서 변경 · 클릭하면 코드 복사</span>
+      </div>
+      <div class="panel-body random-wrap">
+        <div class="random-bands" id="random-bands"></div>
+        <div class="random-actions">
+          <div class="mode-toggle" id="mode-toggle">
+            <button data-mode="samhwa" aria-pressed="true">삼화 컬러 랜덤</button>
+            <button data-mode="rgb" aria-pressed="false">완전 랜덤 RGB</button>
+          </div>
+          <button class="btn ghost" id="reroll-btn">재추첨 (Space)</button>
+          <button class="btn ghost" id="convert-btn" hidden>가장 가까운 삼화 컬러로 변환</button>
+          <div class="save-row" style="margin-left:auto;">
+            <input type="text" id="palette-name" placeholder="팔레트 이름" maxlength="40">
+            <button class="btn" id="save-palette-btn">팔레트 저장</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <!-- ===== TAB: 즐겨찾기·팔레트 ===== -->
+  <section class="tab-panel" data-panel="saved" hidden>
+    <div class="saved-grid">
+      <section class="panel">
+        <div class="panel-head"><h2>즐겨찾기</h2></div>
+        <div class="panel-body" id="fav-list"><p class="empty-hint">아직 즐겨찾기한 색이 없습니다. 매칭 결과의 ☆ 버튼을 눌러 추가하세요.</p></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>최근 검색</h2></div>
+        <div class="panel-body" id="hist-list"><p class="empty-hint">최근 검색 기록이 없습니다.</p></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>프로젝트 팔레트</h2><span class="hint mono" id="proj-count">0/20개 저장됨</span></div>
+        <div class="panel-body">
+          <div class="saved-grid" id="proj-list"><p class="empty-hint">저장된 팔레트가 없습니다.</p></div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===== TAB: 사내 통계 ===== -->
+  <section class="tab-panel" data-panel="stats" hidden>
+    <section class="panel">
+      <div class="panel-head"><h2>자주 조회되는 삼화 컬러</h2><span class="hint mono" id="stats-total">검색 0건</span></div>
+      <div class="panel-body">
+        <div class="stats-bars" id="stats-bars"></div>
+        <p class="hint">개인 식별 없이 어떤 삼화 컬러 코드가 최근접 매칭 결과로 가장 많이 조회됐는지만 집계합니다. 컬러디자인팀 트렌드 파악용입니다.</p>
+      </div>
+    </section>
+  </section>
+
+  <footer class="foot">
+    <p>색차는 CIEDE2000(ΔE00) 기준으로 계산합니다 — ΔE &lt; 1 육안 구분 거의 불가, 1–3 근접, 3 이상 육안으로 차이 인지 가능.</p>
+    <p>CMYK ↔ RGB는 단순(naive) 변환식을 사용한 참고값이며, 실제 인쇄/도장 재현색은 매체·소재에 따라 달라질 수 있습니다.</p>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="colors-data.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ================= color math =================
+  function srgbToLinear(c){ return c<=0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+  function linearToSrgb(c){ return c<=0.0031308 ? c*12.92 : 1.055*Math.pow(c,1/2.4)-0.055; }
+  function rgbToXyz(r,g,b){
+    const rl=srgbToLinear(r/255), gl=srgbToLinear(g/255), bl=srgbToLinear(b/255);
+    return [
+      (rl*0.4124564+gl*0.3575761+bl*0.1804375)*100,
+      (rl*0.2126729+gl*0.7151522+bl*0.0721750)*100,
+      (rl*0.0193339+gl*0.1191920+bl*0.9503041)*100
+    ];
+  }
+  function xyzToRgbRaw(x,y,z){
+    x/=100; y/=100; z/=100;
+    const rl = x*3.2404542+y*-1.5371385+z*-0.4985314;
+    const gl = x*-0.9692660+y*1.8760108+z*0.0415560;
+    const bl = x*0.0556434+y*-0.2040259+z*1.0572252;
+    return [linearToSrgb(rl)*255, linearToSrgb(gl)*255, linearToSrgb(bl)*255];
+  }
+  function xyzToRgb(x,y,z){
+    const raw = xyzToRgbRaw(x,y,z);
+    const outOfGamut = raw.some(v=>v<-0.5||v>255.5);
+    const rgb = raw.map(v=>Math.min(255,Math.max(0,Math.round(v))));
+    return {rgb, outOfGamut};
+  }
+  const D65=[95.0489,100.0,108.884];
+  function xyzToLab(x,y,z){
+    const f=t=>t>0.008856?Math.cbrt(t):7.787*t+16/116;
+    const fx=f(x/D65[0]), fy=f(y/D65[1]), fz=f(z/D65[2]);
+    return [116*fy-16, 500*(fx-fy), 200*(fy-fz)];
+  }
+  function labToXyz(L,a,b){
+    const fy=(L+16)/116, fx=fy+a/500, fz=fy-b/200;
+    const finv=t=> (t*t*t)>0.008856 ? t*t*t : (t-16/116)/7.787;
+    return [finv(fx)*D65[0], finv(fy)*D65[1], finv(fz)*D65[2]];
+  }
+  function rgbToLab(r,g,b){ const [x,y,z]=rgbToXyz(r,g,b); return xyzToLab(x,y,z); }
+  function labToRgbInfo(L,a,b){ const [x,y,z]=labToXyz(L,a,b); return xyzToRgb(x,y,z); }
+  function labToRgb(L,a,b){ return labToRgbInfo(L,a,b).rgb; }
+
+  function rgbToCmyk(r,g,b){
+    const rp=r/255, gp=g/255, bp=b/255;
+    const k=1-Math.max(rp,gp,bp);
+    if(k>=1) return [0,0,0,100];
+    const c=(1-rp-k)/(1-k), m=(1-gp-k)/(1-k), y=(1-bp-k)/(1-k);
+    return [c*100,m*100,y*100,k*100];
+  }
+  function cmykToRgb(c,m,y,k){
+    c/=100; m/=100; y/=100; k/=100;
+    const r=255*(1-c)*(1-k), g=255*(1-m)*(1-k), b=255*(1-y)*(1-k);
+    return [Math.round(r),Math.round(g),Math.round(b)];
+  }
+
+  const HUE_FAMILIES=["R","YR","Y","GY","G","BG","B","PB","P","RP"];
+  function labToMunsell(L,a,b){
+    const V = Math.max(0,Math.min(10, L/10));
+    const Cl = Math.sqrt(a*a+b*b);
+    const Cm = Cl/5;
+    if(Cl<1.5) return `N ${V.toFixed(1)}/`;
+    let ang=(Math.atan2(b,a)*180/Math.PI); if(ang<0) ang+=360;
+    const pos=ang/360*100;
+    let fam=Math.floor(pos/10); if(fam>9) fam=9;
+    let step=pos-fam*10; if(step<0.25) step=10, fam=(fam+9)%10;
+    return `${step.toFixed(1)}${HUE_FAMILIES[fam]} ${V.toFixed(1)}/${Cm.toFixed(1)}`;
+  }
+  function munsellToLab(str){
+    const s=str.trim().toUpperCase();
+    const neutral=s.match(/^N\s*([\d.]+)\s*\/?/);
+    if(neutral){
+      const V=parseFloat(neutral[1]);
+      return [Math.max(0,Math.min(100,V*10)),0,0];
+    }
+    const m=s.match(/^([\d.]+)\s*([A-Z]{1,2})\s+([\d.]+)\s*\/\s*([\d.]+)/);
+    if(!m) return null;
+    const [,huenumStr,famStr,vStr,cStr]=m;
+    const famIdx=HUE_FAMILIES.indexOf(famStr);
+    if(famIdx<0) return null;
+    const huenum=parseFloat(huenumStr), V=parseFloat(vStr), C=parseFloat(cStr);
+    const pos=famIdx*10+huenum;
+    const ang=pos/100*360*Math.PI/180;
+    const L=Math.max(0,Math.min(100,V*10));
+    const Cl=C*5;
+    return [L, Cl*Math.cos(ang), Cl*Math.sin(ang)];
+  }
+
+  function toHex(r,g,b){ return "#"+[r,g,b].map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,"0")).join("").toUpperCase(); }
+  function parseHex(str){
+    const s=str.trim().replace(/^#/,"");
+    if(!/^[0-9a-fA-F]{6}$/.test(s)) return null;
+    return [parseInt(s.slice(0,2),16), parseInt(s.slice(2,4),16), parseInt(s.slice(4,6),16)];
+  }
+
+  function deltaE00(lab1, lab2){
+    const [L1,a1,b1]=lab1, [L2,a2,b2]=lab2;
+    const kL=1,kC=1,kH=1;
+    const C1=Math.sqrt(a1*a1+b1*b1), C2=Math.sqrt(a2*a2+b2*b2);
+    const Cbar=(C1+C2)/2;
+    const G=0.5*(1-Math.sqrt(Math.pow(Cbar,7)/(Math.pow(Cbar,7)+Math.pow(25,7))));
+    const a1p=(1+G)*a1, a2p=(1+G)*a2;
+    const C1p=Math.sqrt(a1p*a1p+b1*b1), C2p=Math.sqrt(a2p*a2p+b2*b2);
+    const h1p=(Math.atan2(b1,a1p)*180/Math.PI+360)%360;
+    const h2p=(Math.atan2(b2,a2p)*180/Math.PI+360)%360;
+    const dLp=L2-L1, dCp=C2p-C1p;
+    let dhp;
+    if(C1p*C2p===0) dhp=0;
+    else{ dhp=h2p-h1p; if(dhp>180) dhp-=360; else if(dhp<-180) dhp+=360; }
+    const dHp=2*Math.sqrt(C1p*C2p)*Math.sin((dhp*Math.PI/180)/2);
+    const Lbarp=(L1+L2)/2, Cbarp=(C1p+C2p)/2;
+    let hbarp;
+    if(C1p*C2p===0) hbarp=h1p+h2p;
+    else{ hbarp=(h1p+h2p); if(Math.abs(h1p-h2p)>180) hbarp+=360; hbarp/=2; }
+    const T=1-0.17*Math.cos((hbarp-30)*Math.PI/180)+0.24*Math.cos((2*hbarp)*Math.PI/180)+0.32*Math.cos((3*hbarp+6)*Math.PI/180)-0.20*Math.cos((4*hbarp-63)*Math.PI/180);
+    const dTheta=30*Math.exp(-Math.pow((hbarp-275)/25,2));
+    const Rc=2*Math.sqrt(Math.pow(Cbarp,7)/(Math.pow(Cbarp,7)+Math.pow(25,7)));
+    const Sl=1+(0.015*Math.pow(Lbarp-50,2))/Math.sqrt(20+Math.pow(Lbarp-50,2));
+    const Sc=1+0.045*Cbarp;
+    const Sh=1+0.015*Cbarp*T;
+    const Rt=-Math.sin(2*dTheta*Math.PI/180)*Rc;
+    return Math.sqrt(
+      Math.pow(dLp/(kL*Sl),2)+ Math.pow(dCp/(kC*Sc),2)+ Math.pow(dHp/(kH*Sh),2)+
+      Rt*(dCp/(kC*Sc))*(dHp/(kH*Sh))
+    );
+  }
+
+  const CB_MATRICES = {
+    protanopia: [0.567,0.433,0, 0.558,0.442,0, 0,0.242,0.758],
+    deuteranopia:[0.625,0.375,0, 0.7,0.3,0, 0,0.3,0.7],
+    tritanopia:[0.95,0.05,0, 0,0.433,0.567, 0,0.475,0.525],
+  };
+  let cbMode = "none";
+  function displayHex(hex){
+    if(cbMode==="none") return hex;
+    const rgb = parseHex(hex); if(!rgb) return hex;
+    const m = CB_MATRICES[cbMode];
+    const nr = m[0]*rgb[0]+m[1]*rgb[1]+m[2]*rgb[2];
+    const ng = m[3]*rgb[0]+m[4]*rgb[1]+m[5]*rgb[2];
+    const nb = m[6]*rgb[0]+m[7]*rgb[1]+m[8]*rgb[2];
+    return toHex(nr,ng,nb);
+  }
+
+  function fmt(n, d=1){ return Number(n.toFixed(d)); }
+  function deClass(de){ return de<1 ? "de-tag-good" : de<3 ? "de-tag-mid" : "de-tag-hi"; }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  function timeAgo(ts){
+    const s = Math.max(0, Math.floor((Date.now()-ts)/1000));
+    if(s<60) return "방금 전";
+    if(s<3600) return Math.floor(s/60)+"분 전";
+    if(s<86400) return Math.floor(s/3600)+"시간 전";
+    return Math.floor(s/86400)+"일 전";
+  }
+  function showToast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>t.classList.remove("show"), 1800);
+  }
+  function copyText(str){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(str).then(()=>showToast(str+" 복사됨")).catch(()=>showToast("복사 실패"));
+    }else{
+      showToast(str);
+    }
+  }
+  // ================= theme toggle =================
+  function systemPrefersDark(){ return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches; }
+  function applyTheme(theme){
+    document.documentElement.setAttribute("data-theme", theme);
+    const btn = document.getElementById("theme-toggle");
+    btn.textContent = theme==="dark" ? "☀️" : "🌙";
+    btn.setAttribute("aria-label", theme==="dark" ? "라이트 모드로 전환" : "다크 모드로 전환");
+  }
+  function initTheme(){
+    let theme = null;
+    try{ theme = localStorage.getItem("cm_theme"); }catch(e){}
+    if(theme!=="light" && theme!=="dark") theme = systemPrefersDark() ? "dark" : "light";
+    applyTheme(theme);
+  }
+  document.getElementById("theme-toggle").addEventListener("click", ()=>{
+    const next = document.documentElement.getAttribute("data-theme")==="dark" ? "light" : "dark";
+    try{ localStorage.setItem("cm_theme", next); }catch(e){}
+    applyTheme(next);
+  });
+  initTheme();
+
+  // ================= auth gate =================
+  const AUTH_CODE = "1234"; // 배포 전 실제 사내 공유 코드로 변경하세요
+  const AUTH_KEY = "cm_authed";
+  function initAuth(){
+    const gate = document.getElementById("auth-gate");
+    const app = document.getElementById("app");
+    let ok=false;
+    try{ ok = localStorage.getItem(AUTH_KEY)==="1"; }catch(e){}
+    if(ok){ gate.hidden=true; app.hidden=false; return true; }
+    const input = document.getElementById("auth-code");
+    const err = document.getElementById("auth-error");
+    const submit = document.getElementById("auth-submit");
+    function tryEnter(){
+      if(input.value.trim()===AUTH_CODE){
+        try{ localStorage.setItem(AUTH_KEY,"1"); }catch(e){}
+        gate.hidden=true; app.hidden=false;
+        boot();
+      }else{
+        err.hidden=false;
+        gate.querySelector(".auth-card").classList.remove("shake");
+        void gate.offsetWidth;
+        gate.querySelector(".auth-card").classList.add("shake");
+      }
+    }
+    submit.addEventListener("click", tryEnter);
+    input.addEventListener("keydown", e=>{ if(e.key==="Enter") tryEnter(); });
+    input.focus();
+    return false;
+  }
+
+  // ================= anonymous id (per-browser) =================
+  function getAnonId(){
+    let id=null;
+    try{ id = localStorage.getItem("cm_anon_id"); }catch(e){}
+    if(!id){
+      id = "u_"+(crypto.randomUUID ? crypto.randomUUID() : (Date.now()+"-"+Math.random().toString(16).slice(2)));
+      try{ localStorage.setItem("cm_anon_id", id); }catch(e){}
+    }
+    return id;
+  }
+  const ANON_ID = getAnonId();
+
+  // ================= storage layer (db capability with localStorage fallback) =================
+  let dbNs = null;
+  const Store = {
+    async init(){
+      try{ dbNs = (window.claude && window.claude.use) ? await window.claude.use("db") : null; }catch(e){ dbNs=null; }
+      document.getElementById("db-notice").hidden = !!dbNs;
+      return dbNs;
+    },
+    lsGet(key, fallback){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } },
+    lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} },
+    async getFavorites(){
+      // snapshot data() is frozen — always return a fresh, mutable copy
+      if(dbNs){ try{ const snap = await dbNs.doc("favorites/"+ANON_ID).get(); return snap.exists ? (snap.data().items||[]).slice() : []; }catch(e){} }
+      return this.lsGet("cm_favorites", []).slice();
+    },
+    async setFavorites(items){
+      if(dbNs){ try{ await dbNs.doc("favorites/"+ANON_ID).set({items, updatedAt:Date.now()}); return; }catch(e){} }
+      this.lsSet("cm_favorites", items);
+    },
+    async getHistory(){
+      if(dbNs){ try{ const snap = await dbNs.doc("history/"+ANON_ID).get(); return snap.exists ? (snap.data().items||[]).slice() : []; }catch(e){} }
+      return this.lsGet("cm_history", []).slice();
+    },
+    async setHistory(items){
+      if(dbNs){ try{ await dbNs.doc("history/"+ANON_ID).set({items, updatedAt:Date.now()}); return; }catch(e){} }
+      this.lsSet("cm_history", items);
+    },
+    async getProjects(){
+      if(dbNs){
+        try{
+          const snap = await dbNs.doc("projects_index/"+ANON_ID).get();
+          return snap.exists ? (snap.data().items||[]).slice() : [];
+        }catch(e){}
+      }
+      return this.lsGet("cm_projects", []).slice();
+    },
+    async setProjects(items){
+      if(dbNs){ try{ await dbNs.doc("projects_index/"+ANON_ID).set({items, updatedAt:Date.now()}); return; }catch(e){} }
+      this.lsSet("cm_projects", items);
+    },
+    async savePaletteShared(id, data){
+      if(dbNs){ try{ await dbNs.doc("palettes/"+id).set(data); return true; }catch(e){ return false; } }
+      const all = this.lsGet("cm_palettes_shared", {}); all[id]=data; this.lsSet("cm_palettes_shared", all);
+      return true;
+    },
+    async loadPaletteShared(id){
+      if(dbNs){ try{ const snap = await dbNs.doc("palettes/"+id).get(); return snap.exists ? snap.data() : null; }catch(e){ return null; } }
+      const all = this.lsGet("cm_palettes_shared", {}); return all[id]||null;
+    },
+    async bumpStat(code){
+      if(dbNs){
+        try{
+          const ref = dbNs.doc("stats/color_counts");
+          const snap = await ref.get();
+          const data = snap.exists ? snap.data() : {};
+          const counts = data.counts || {};
+          counts[code] = (counts[code]||0)+1;
+          const total = (data.total||0)+1;
+          if(snap.exists) await ref.update({counts, total});
+          else await ref.set({counts, total});
+          return {counts, total};
+        }catch(e){}
+      }
+      const data = this.lsGet("cm_stats", {counts:{}, total:0});
+      data.counts[code] = (data.counts[code]||0)+1;
+      data.total = (data.total||0)+1;
+      this.lsSet("cm_stats", data);
+      return data;
+    },
+    async getStats(){
+      if(dbNs){ try{ const snap = await dbNs.doc("stats/color_counts").get(); return snap.exists ? snap.data() : {counts:{}, total:0}; }catch(e){} }
+      return this.lsGet("cm_stats", {counts:{}, total:0});
+    }
+  };
+
+  // ================= palette data =================
+  let palette = [];
+  let seriesFilter = "all";
+  let focusGroup = "hex"; // last-focused input group; target of Enter / the → convert button
+  let current = { r:143, g:166, b:200 };
+  let favoritesSet = new Set();
+
+  const els = {
+    swatch: document.getElementById("swatch"),
+    swatchHex: document.getElementById("swatch-hex"),
+    swatchLab: document.getElementById("swatch-lab"),
+    swatchSource: document.getElementById("swatch-source"),
+    badgeRow: document.getElementById("badge-row"),
+    hex: document.getElementById("in-hex"),
+    L: document.getElementById("in-L"), a: document.getElementById("in-a"), b: document.getElementById("in-b"),
+    X: document.getElementById("in-X"), Y: document.getElementById("in-Y"), Z: document.getElementById("in-Z"),
+    C: document.getElementById("in-C"), M: document.getElementById("in-M"), Ya: document.getElementById("in-Ya"), K: document.getElementById("in-K"),
+    munsell: document.getElementById("in-munsell"),
+    best: document.getElementById("best-match"),
+    list: document.getElementById("match-list"),
+  };
+
+  let lastGamut = false;
+  let lastRefBadge = false; // "참고용" (이미지 유래)
+
+  function findMatches(lab, filter, limit){
+    const pool = filter==="all" ? palette : palette.filter(c=>c.series===filter);
+    if(!pool.length) return [];
+    return pool.map(c=>({c, de: deltaE00(lab, c.lab)})).sort((x,y)=>x.de-y.de).slice(0,limit);
+  }
+
+  function render(sourceGroup){
+    const {r,g,b} = current;
+    const lab = rgbToLab(r,g,b);
+    const xyz = rgbToXyz(r,g,b);
+    const cmyk = rgbToCmyk(r,g,b);
+    const munsell = labToMunsell(...lab);
+    const hex = toHex(r,g,b);
+
+    els.swatch.style.background = displayHex(hex);
+    els.swatchHex.textContent = hex;
+    els.swatchLab.textContent = `Lab ${fmt(lab[0])} / ${fmt(lab[1])} / ${fmt(lab[2])}`;
+    els.swatchSource.textContent = sourceGroup ? `입력: ${{hex:"RGB HEX",lab:"Lab",xyz:"XYZ",cmyk:"CMYK",munsell:"먼셀",image:"이미지 추출"}[sourceGroup]||sourceGroup}` : "기본값";
+
+    // every field is reformatted from the committed color — commits only happen
+    // via explicit action (Enter / → button), never mid-keystroke, so it's safe
+    // to overwrite the field the value just came from too (shows the normalized/rounded value).
+    els.hex.value = hex;
+    els.L.value=fmt(lab[0]); els.a.value=fmt(lab[1]); els.b.value=fmt(lab[2]);
+    els.X.value=fmt(xyz[0]); els.Y.value=fmt(xyz[1]); els.Z.value=fmt(xyz[2]);
+    els.C.value=fmt(cmyk[0]); els.M.value=fmt(cmyk[1]); els.Ya.value=fmt(cmyk[2]); els.K.value=fmt(cmyk[3]);
+    els.munsell.value = munsell;
+
+    // gamut check only meaningful when source isn't plain hex/rgb entry
+    lastGamut = false;
+    if(sourceGroup==="lab" || sourceGroup==="xyz" || sourceGroup==="munsell"){
+      lastGamut = labToRgbInfo(lab[0],lab[1],lab[2]).outOfGamut;
+    }
+    lastRefBadge = sourceGroup==="image";
+
+    els.badgeRow.innerHTML = [
+      lastRefBadge ? `<span class="badge badge-ref">참고용 (이미지 추출)</span>` : "",
+      lastGamut ? `<span class="badge badge-gamut">sRGB 표현 범위 밖 (근사)</span>` : "",
+    ].filter(Boolean).join("");
+
+    renderMatches(lab);
+    logSearch(lab);
+  }
+
+  function renderMatches(lab){
+    const scored = findMatches(lab, seriesFilter, 8);
+    if(!scored.length){ els.best.innerHTML=""; els.list.innerHTML=`<p class="hint" style="padding:8px 4px;">데이터를 불러오는 중입니다…</p>`; return; }
+    const top = scored[0];
+
+    function starHtml(code){
+      const active = favoritesSet.has(code);
+      return `<button class="star-btn ${active?'active':''}" data-fav="${escapeHtml(code)}" title="즐겨찾기">${active?'★':'☆'}</button>`;
+    }
+
+    els.best.innerHTML = `
+      <div class="chip-swatch" style="background:${displayHex(top.c.hex)}"></div>
+      <div class="meta">
+        <span class="code mono">${escapeHtml(top.c.code)}</span>
+        <span class="name">${escapeHtml(top.c.name)} · ${escapeHtml(top.c.series)}</span>
+        <span class="name mono">${top.c.hex} · Lab ${top.c.lab.map(v=>fmt(v)).join(' / ')}</span>
+      </div>
+      <div class="de">
+        <b class="${deClass(top.de)}">${fmt(top.de,2)}</b>
+        <span>ΔE00 최우선</span>
+        ${starHtml(top.c.code)}
+      </div>`;
+
+    els.list.innerHTML = scored.slice(1).map(({c,de})=>`
+      <div class="match-row">
+        <div class="chip-swatch" style="background:${displayHex(c.hex)}"></div>
+        <span class="code mono">${escapeHtml(c.code)}</span>
+        <span class="name">${escapeHtml(c.name)}</span>
+        <span class="series-pill">${escapeHtml(c.series)}</span>
+        <span class="de-val ${deClass(de)}">${fmt(de,2)}</span>
+        ${starHtml(c.code)}
+      </div>`).join("");
+  }
+
+  els.best.addEventListener("click", handleStarClick);
+  els.list.addEventListener("click", handleStarClick);
+  function handleStarClick(e){
+    const btn = e.target.closest("[data-fav]");
+    if(!btn) return;
+    toggleFavorite(btn.dataset.fav);
+  }
+
+  async function toggleFavorite(code){
+    const c = palette.find(p=>p.code===code);
+    if(!c) return;
+    const items = await Store.getFavorites();
+    const idx = items.findIndex(f=>f.code===code);
+    if(idx>=0){ items.splice(idx,1); favoritesSet.delete(code); showToast("즐겨찾기에서 제거"); }
+    else{ items.unshift({code:c.code, name:c.name, series:c.series, hex:c.hex, lab:c.lab}); favoritesSet.add(code); showToast("즐겨찾기에 추가"); }
+    await Store.setFavorites(items.slice(0,160));
+    renderMatches(rgbToLab(current.r,current.g,current.b));
+    renderSavedTab();
+  }
+
+  // search history + stats logging — fires once per explicit conversion (Enter / → button),
+  // never per keystroke, since render() itself is now only called after an explicit commit.
+  async function logSearch(lab){
+    const best = findMatches(lab, "all", 1)[0];
+    if(!best) return;
+    const items = await Store.getHistory();
+    items.unshift({lab, hex:toHex(...labToRgb(...lab)), bestCode:best.c.code, ts:Date.now()});
+    await Store.setHistory(items.slice(0,160));
+    await Store.bumpStat(best.c.code);
+    renderSavedTab();
+    renderStatsTab();
+  }
+
+  // ================= input wiring =================
+  function commitFromHex(){
+    const rgb = parseHex(els.hex.value);
+    if(rgb){ current = {r:rgb[0],g:rgb[1],b:rgb[2]}; render("hex"); }
+  }
+  function commitFromLab(){
+    const L=parseFloat(els.L.value), a=parseFloat(els.a.value), b=parseFloat(els.b.value);
+    if([L,a,b].every(Number.isFinite)){
+      const [r,g,bb]=labToRgb(L,a,b);
+      current={r,g,b:bb}; render("lab");
+    }
+  }
+  function commitFromXyz(){
+    const X=parseFloat(els.X.value), Y=parseFloat(els.Y.value), Z=parseFloat(els.Z.value);
+    if([X,Y,Z].every(Number.isFinite)){
+      const {rgb}=xyzToRgb(X,Y,Z);
+      current={r:rgb[0],g:rgb[1],b:rgb[2]}; render("xyz");
+    }
+  }
+  function commitFromCmyk(){
+    const C=parseFloat(els.C.value), M=parseFloat(els.M.value), Y=parseFloat(els.Ya.value), K=parseFloat(els.K.value);
+    if([C,M,Y,K].every(Number.isFinite)){
+      const [r,g,b]=cmykToRgb(C,M,Y,K);
+      current={r,g,b}; render("cmyk");
+    }
+  }
+  function commitFromMunsell(){
+    const lab = munsellToLab(els.munsell.value);
+    if(lab){
+      const [r,g,b]=labToRgb(...lab);
+      current={r,g,b}; render("munsell");
+    }
+  }
+
+  const commitFns = { hex:commitFromHex, lab:commitFromLab, xyz:commitFromXyz, cmyk:commitFromCmyk, munsell:commitFromMunsell };
+  function commitGroup(group){ (commitFns[group]||(()=>{}))(); }
+
+  // typing alone no longer triggers a conversion/search — only Enter or the → button does
+  document.querySelectorAll("[data-group]").forEach(el=>{
+    if(el.tagName!=="INPUT") return;
+    const group = el.dataset.group;
+    el.addEventListener("focus", ()=>{ focusGroup = group; });
+    el.addEventListener("keydown", (e)=>{
+      if(e.key!=="Enter") return;
+      e.preventDefault();
+      commitGroup(group);
+    });
+  });
+  document.getElementById("convert-btn-main").addEventListener("click", ()=>commitGroup(focusGroup));
+
+  document.getElementById("filter-chips").addEventListener("click", (e)=>{
+    const btn = e.target.closest(".chip");
+    if(!btn) return;
+    document.querySelectorAll("#filter-chips .chip").forEach(c=>c.setAttribute("aria-pressed","false"));
+    btn.setAttribute("aria-pressed","true");
+    seriesFilter = btn.dataset.series;
+    renderMatches(rgbToLab(current.r,current.g,current.b));
+  });
+
+  document.getElementById("cb-select").addEventListener("change", (e)=>{
+    cbMode = e.target.value;
+    render(null);
+    renderRandomBands();
+  });
+
+  // ================= tabs =================
+  function setCurrentAndJumpToMatch(r,g,b, sourceGroup){
+    current = {r,g,b};
+    activateTab("match");
+    render(sourceGroup);
+  }
+  function activateTab(name){
+    document.querySelectorAll(".tab-btn").forEach(b=>b.setAttribute("aria-selected", b.dataset.tab===name?"true":"false"));
+    document.querySelectorAll(".tab-panel").forEach(p=>p.hidden = p.dataset.panel!==name);
+    if(name==="saved") renderSavedTab();
+    if(name==="stats") renderStatsTab();
+    if(name==="random" && randomState.colors.length===0) rerollRandom();
+  }
+  document.getElementById("tabs").addEventListener("click", e=>{
+    const btn = e.target.closest(".tab-btn");
+    if(!btn) return;
+    activateTab(btn.dataset.tab);
+  });
+
+  // ================= image extraction tab =================
+  const dropZone = document.getElementById("drop-zone");
+  const fileInput = document.getElementById("img-file");
+  const canvasWrap = document.getElementById("canvas-wrap");
+  const imgCanvas = document.getElementById("img-canvas");
+  const imgCtx = imgCanvas.getContext("2d", {willReadFrequently:true});
+  const loupe = document.getElementById("loupe");
+  const loupeCanvas = document.getElementById("loupe-canvas");
+  const loupeCtx = loupeCanvas.getContext("2d");
+  const kmeansBtn = document.getElementById("kmeans-btn");
+  const kmeansRow = document.getElementById("kmeans-row");
+
+  dropZone.addEventListener("click", ()=>fileInput.click());
+  dropZone.addEventListener("dragover", e=>{ e.preventDefault(); dropZone.classList.add("drag"); });
+  dropZone.addEventListener("dragleave", ()=>dropZone.classList.remove("drag"));
+  dropZone.addEventListener("drop", e=>{
+    e.preventDefault(); dropZone.classList.remove("drag");
+    if(e.dataTransfer.files[0]) loadImageFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener("change", e=>{ if(e.target.files[0]) loadImageFile(e.target.files[0]); });
+
+  function loadImageFile(file){
+    if(!file.type.startsWith("image/")) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      const maxDim = 720;
+      const scale = Math.min(1, maxDim/Math.max(img.width,img.height));
+      imgCanvas.width = Math.round(img.width*scale);
+      imgCanvas.height = Math.round(img.height*scale);
+      imgCtx.drawImage(img,0,0,imgCanvas.width,imgCanvas.height);
+      canvasWrap.hidden = false;
+      document.getElementById("image-hint").hidden = false;
+      kmeansBtn.disabled = false;
+      kmeansRow.innerHTML = "";
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  }
+
+  function canvasPointFromEvent(e){
+    const rect = imgCanvas.getBoundingClientRect();
+    const scaleX = imgCanvas.width/rect.width, scaleY = imgCanvas.height/rect.height;
+    const x = Math.floor((e.clientX-rect.left)*scaleX);
+    const y = Math.floor((e.clientY-rect.top)*scaleY);
+    return [Math.max(0,Math.min(imgCanvas.width-1,x)), Math.max(0,Math.min(imgCanvas.height-1,y))];
+  }
+
+  imgCanvas.addEventListener("mousemove", e=>{
+    const [x,y] = canvasPointFromEvent(e);
+    const rect = canvasWrap.getBoundingClientRect();
+    loupe.style.left = (e.clientX-rect.left-50)+"px";
+    loupe.style.top = (e.clientY-rect.top-120)+"px";
+    loupe.style.display = "block";
+    loupeCtx.imageSmoothingEnabled = false;
+    loupeCtx.clearRect(0,0,100,100);
+    loupeCtx.drawImage(imgCanvas, x-8,y-8,16,16, 0,0,100,100);
+  });
+  imgCanvas.addEventListener("mouseleave", ()=>{ loupe.style.display="none"; });
+  imgCanvas.addEventListener("click", e=>{
+    const [x,y] = canvasPointFromEvent(e);
+    const d = imgCtx.getImageData(x,y,1,1).data;
+    setCurrentAndJumpToMatch(d[0],d[1],d[2],"image");
+    showToast("이미지에서 색을 채취했습니다");
+  });
+
+  function kmeans(pixels, k, iters){
+    let centroids = [];
+    const used = new Set();
+    const n = pixels.length;
+    while(centroids.length<k && used.size<n){
+      const idx = Math.floor(Math.random()*n);
+      if(used.has(idx)) continue; used.add(idx);
+      centroids.push(pixels[idx].slice());
+    }
+    let assign = new Array(n).fill(0);
+    for(let it=0; it<iters; it++){
+      for(let i=0;i<n;i++){
+        let best=0, bestD=Infinity;
+        for(let c=0;c<centroids.length;c++){
+          const dc=centroids[c];
+          const d=(pixels[i][0]-dc[0])**2+(pixels[i][1]-dc[1])**2+(pixels[i][2]-dc[2])**2;
+          if(d<bestD){bestD=d;best=c;}
+        }
+        assign[i]=best;
+      }
+      const sums=Array.from({length:centroids.length},()=>[0,0,0,0]);
+      for(let i=0;i<n;i++){ const c=assign[i]; const s=sums[c]; s[0]+=pixels[i][0]; s[1]+=pixels[i][1]; s[2]+=pixels[i][2]; s[3]++; }
+      for(let c=0;c<centroids.length;c++){ if(sums[c][3]>0) centroids[c]=[sums[c][0]/sums[c][3], sums[c][1]/sums[c][3], sums[c][2]/sums[c][3]]; }
+    }
+    const counts = new Array(centroids.length).fill(0);
+    assign.forEach(c=>counts[c]++);
+    return centroids.map((c,i)=>({rgb:c.map(Math.round), count:counts[i]})).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
+  }
+
+  kmeansBtn.addEventListener("click", ()=>{
+    const small = document.createElement("canvas");
+    const sw = 60, sh = Math.max(1,Math.round(60*imgCanvas.height/imgCanvas.width));
+    small.width = sw; small.height = sh;
+    const sctx = small.getContext("2d");
+    sctx.drawImage(imgCanvas, 0,0,sw,sh);
+    const data = sctx.getImageData(0,0,sw,sh).data;
+    const pixels = [];
+    for(let i=0;i<data.length;i+=4){ if(data[i+3]>10) pixels.push([data[i],data[i+1],data[i+2]]); }
+    const clusters = kmeans(pixels, 5, 8);
+    kmeansRow.innerHTML = clusters.map(cl=>{
+      const hex = toHex(cl.rgb[0],cl.rgb[1],cl.rgb[2]);
+      return `<div class="kmeans-swatch" style="background:${hex}" data-rgb="${cl.rgb.join(',')}" title="${hex} · ${Math.round(cl.count/pixels.length*100)}%"></div>`;
+    }).join("");
+  });
+  kmeansRow.addEventListener("click", e=>{
+    const sw = e.target.closest(".kmeans-swatch");
+    if(!sw) return;
+    const [r,g,b] = sw.dataset.rgb.split(",").map(Number);
+    setCurrentAndJumpToMatch(r,g,b,"image");
+  });
+
+  // ================= random palette tab =================
+  const bandsEl = document.getElementById("random-bands");
+  let randomMode = "samhwa";
+  const randomState = { colors: [], locked: [false,false,false,false,false], deltas: [null,null,null,null,null] };
+
+  function randomSamhwaColors(){
+    const bins = 12;
+    const buckets = Array.from({length:bins},()=>[]);
+    palette.forEach(c=>{
+      let ang=(Math.atan2(c.lab[2],c.lab[1])*180/Math.PI); if(ang<0) ang+=360;
+      buckets[Math.floor(ang/360*bins)%bins].push(c);
+    });
+    const order = [...Array(bins).keys()].sort(()=>Math.random()-0.5);
+    const picks = [];
+    let i=0;
+    while(picks.length<5 && i<order.length*3){
+      const b = buckets[order[i%order.length]];
+      if(b && b.length){ picks.push(b[Math.floor(Math.random()*b.length)]); }
+      i++;
+    }
+    while(picks.length<5 && palette.length) picks.push(palette[Math.floor(Math.random()*palette.length)]);
+    return picks.map(c=>({r:c.rgb[0],g:c.rgb[1],b:c.rgb[2], code:c.code, hex:c.hex}));
+  }
+  function randomRgbColors(){
+    return Array.from({length:5},()=>{
+      const r=Math.floor(Math.random()*256), g=Math.floor(Math.random()*256), b=Math.floor(Math.random()*256);
+      return {r,g,b, code:null, hex:toHex(r,g,b)};
+    });
+  }
+
+  function rerollRandom(){
+    const fresh = randomMode==="samhwa" ? randomSamhwaColors() : randomRgbColors();
+    for(let i=0;i<5;i++){
+      if(!randomState.locked[i]){
+        randomState.colors[i] = fresh[i];
+        randomState.deltas[i] = null;
+      }
+    }
+    renderRandomBands();
+  }
+
+  function renderRandomBands(){
+    bandsEl.innerHTML = randomState.colors.map((c,i)=>{
+      if(!c) return "";
+      const hex = c.hex || toHex(c.r,c.g,c.b);
+      const label = c.code || hex;
+      const de = randomState.deltas[i];
+      return `<div class="band ${randomState.locked[i]?'locked':''}" style="background:${displayHex(hex)}" data-idx="${i}" draggable="true">
+        <button class="lock-btn ${randomState.locked[i]?'on':''}" data-lock="${i}">${randomState.locked[i]?'🔒':'🔓'}</button>
+        ${de!=null ? `<span class="band-de mono">ΔE ${fmt(de,2)}</span>` : ""}
+        <span class="band-code mono">${escapeHtml(label)}</span>
+      </div>`;
+    }).join("");
+  }
+
+  bandsEl.addEventListener("click", e=>{
+    const lockBtn = e.target.closest("[data-lock]");
+    if(lockBtn){
+      const i = Number(lockBtn.dataset.lock);
+      randomState.locked[i] = !randomState.locked[i];
+      renderRandomBands();
+      return;
+    }
+    const band = e.target.closest(".band");
+    if(band){
+      const i = Number(band.dataset.idx);
+      const c = randomState.colors[i];
+      copyText(c.code || c.hex);
+    }
+  });
+
+  let dragIdx = null;
+  bandsEl.addEventListener("dragstart", e=>{
+    const band = e.target.closest(".band");
+    if(!band) return;
+    dragIdx = Number(band.dataset.idx);
+  });
+  bandsEl.addEventListener("dragover", e=>e.preventDefault());
+  bandsEl.addEventListener("drop", e=>{
+    const band = e.target.closest(".band");
+    if(!band || dragIdx==null) return;
+    const dropIdx = Number(band.dataset.idx);
+    if(dropIdx===dragIdx) return;
+    [randomState.colors[dragIdx], randomState.colors[dropIdx]] = [randomState.colors[dropIdx], randomState.colors[dragIdx]];
+    [randomState.locked[dragIdx], randomState.locked[dropIdx]] = [randomState.locked[dropIdx], randomState.locked[dragIdx]];
+    [randomState.deltas[dragIdx], randomState.deltas[dropIdx]] = [randomState.deltas[dropIdx], randomState.deltas[dragIdx]];
+    dragIdx = null;
+    renderRandomBands();
+  });
+
+  document.getElementById("reroll-btn").addEventListener("click", rerollRandom);
+  document.addEventListener("keydown", e=>{
+    if(e.code!=="Space") return;
+    const panel = document.querySelector('.tab-panel[data-panel="random"]');
+    if(panel.hidden) return;
+    const tag = (document.activeElement.tagName||"").toLowerCase();
+    if(tag==="input"||tag==="textarea"||tag==="select") return;
+    e.preventDefault();
+    rerollRandom();
+  });
+
+  document.getElementById("mode-toggle").addEventListener("click", e=>{
+    const btn = e.target.closest("button"); if(!btn) return;
+    randomMode = btn.dataset.mode;
+    document.querySelectorAll("#mode-toggle button").forEach(b=>b.setAttribute("aria-pressed", b===btn?"true":"false"));
+    document.getElementById("convert-btn").hidden = randomMode!=="rgb";
+    randomState.locked = [false,false,false,false,false];
+    rerollRandom();
+  });
+
+  document.getElementById("convert-btn").addEventListener("click", ()=>{
+    for(let i=0;i<5;i++){
+      if(randomState.locked[i]) continue;
+      const c = randomState.colors[i];
+      const lab = rgbToLab(c.r,c.g,c.b);
+      const best = findMatches(lab, "all", 1)[0];
+      if(best){
+        randomState.colors[i] = {r:best.c.rgb[0], g:best.c.rgb[1], b:best.c.rgb[2], code:best.c.code, hex:best.c.hex};
+        randomState.deltas[i] = best.de;
+      }
+    }
+    renderRandomBands();
+  });
+
+  const MAX_PROJECT_PALETTES = 20;
+  document.getElementById("save-palette-btn").addEventListener("click", async ()=>{
+    const projects = await Store.getProjects();
+    if(projects.length>=MAX_PROJECT_PALETTES){
+      showToast(`프로젝트 팔레트는 최대 ${MAX_PROJECT_PALETTES}개까지 저장할 수 있습니다`);
+      return;
+    }
+    const nameInput = document.getElementById("palette-name");
+    const name = nameInput.value.trim() || "이름 없는 팔레트";
+    const id = "p_"+Math.random().toString(36).slice(2,9);
+    const colorsData = randomState.colors.map(c=>({hex:c.hex||toHex(c.r,c.g,c.b), code:c.code}));
+    const payload = {name, colors:colorsData, createdAt:Date.now(), owner:ANON_ID};
+    const shared = await Store.savePaletteShared(id, payload);
+    projects.unshift({id, name, colors:colorsData, createdAt:Date.now()});
+    await Store.setProjects(projects.slice(0,MAX_PROJECT_PALETTES));
+    nameInput.value = "";
+    showToast(shared ? "팔레트 저장됨" : "팔레트가 이 브라우저에 저장됨");
+    renderSavedTab();
+  });
+
+  // ================= saved tab (paginated) =================
+  const PAGE_SIZE = 8;
+  const PROJ_PAGE_SIZE = 4;
+  let favPage = 0, histPage = 0, projPage = 0;
+
+  function paginate(arr, page, pageSize=PAGE_SIZE){
+    const totalPages = Math.max(1, Math.ceil(arr.length/pageSize));
+    const clamped = Math.min(Math.max(0,page), totalPages-1);
+    return { slice: arr.slice(clamped*pageSize, clamped*pageSize+pageSize), page: clamped, totalPages, offset: clamped*pageSize };
+  }
+  function pagerHtml(name, page, totalPages, wide){
+    if(totalPages<=1) return "";
+    return `<div class="pager"${wide?' style="grid-column:1/-1;"':""}>
+      <button data-pager="${name}" data-dir="-1" ${page<=0?"disabled":""}>‹ 이전</button>
+      <span class="pager-info mono">${page+1} / ${totalPages}</span>
+      <button data-pager="${name}" data-dir="1" ${page>=totalPages-1?"disabled":""}>다음 ›</button>
+    </div>`;
+  }
+
+  async function renderSavedTab(){
+    const panel = document.querySelector('.tab-panel[data-panel="saved"]');
+    if(panel.hidden) return;
+
+    const favs = await Store.getFavorites();
+    favoritesSet = new Set(favs.map(f=>f.code));
+    const favP = paginate(favs, favPage); favPage = favP.page;
+    const favList = document.getElementById("fav-list");
+    favList.innerHTML = favs.length ? favP.slice.map(f=>`
+      <div class="fav-row">
+        <div class="sw" style="background:${displayHex(f.hex)}" data-load="${escapeHtml(f.code)}"></div>
+        <span class="lbl mono" data-load="${escapeHtml(f.code)}">${escapeHtml(f.code)} · ${escapeHtml(f.name)}</span>
+        <button class="del" data-del="${escapeHtml(f.code)}">✕</button>
+      </div>`).join("") + pagerHtml("fav", favP.page, favP.totalPages) : `<p class="empty-hint">아직 즐겨찾기한 색이 없습니다. 매칭 결과의 ☆ 버튼을 눌러 추가하세요.</p>`;
+
+    const hist = await Store.getHistory();
+    const histP = paginate(hist, histPage); histPage = histP.page;
+    const histList = document.getElementById("hist-list");
+    histList.innerHTML = hist.length ? histP.slice.map((h,i)=>`
+      <div class="hist-row">
+        <div class="sw" style="background:${displayHex(h.hex)}" data-loadhist="${histP.offset+i}"></div>
+        <span class="lbl mono" data-loadhist="${histP.offset+i}">${h.hex} → ${escapeHtml(h.bestCode)}</span>
+        <span class="hint">${timeAgo(h.ts)}</span>
+      </div>`).join("") + pagerHtml("hist", histP.page, histP.totalPages) : `<p class="empty-hint">최근 검색 기록이 없습니다.</p>`;
+    histList._data = hist;
+
+    const projects = await Store.getProjects();
+    document.getElementById("proj-count").textContent = `${projects.length}/${MAX_PROJECT_PALETTES}개 저장됨`;
+    const projP = paginate(projects, projPage, PROJ_PAGE_SIZE); projPage = projP.page;
+    const projList = document.getElementById("proj-list");
+    projList.innerHTML = projects.length ? projP.slice.map(p=>`
+      <div class="proj-card">
+        <span class="proj-name">${escapeHtml(p.name)}</span>
+        <div class="proj-swatches">${p.colors.map(c=>`<span style="background:${displayHex(c.hex)}"></span>`).join("")}</div>
+        <div class="proj-actions">
+          <button data-load-proj="${p.id}">랜덤 팔레트로 불러오기</button>
+          <button data-share="${p.id}">링크 복사</button>
+          <button data-del-proj="${p.id}">삭제</button>
+        </div>
+      </div>`).join("") + pagerHtml("proj", projP.page, projP.totalPages, true) : `<p class="empty-hint">저장된 팔레트가 없습니다.</p>`;
+  }
+
+  function handlePagerClick(e, name, setPage){
+    const btn = e.target.closest(`[data-pager="${name}"]`);
+    if(!btn) return false;
+    setPage(p=>p+Number(btn.dataset.dir));
+    renderSavedTab();
+    return true;
+  }
+
+  document.getElementById("fav-list").addEventListener("click", async e=>{
+    if(handlePagerClick(e, "fav", fn=>favPage=fn(favPage))) return;
+    const del = e.target.closest("[data-del]");
+    if(del){ await toggleFavorite(del.dataset.del); return; }
+    const load = e.target.closest("[data-load]");
+    if(load){
+      const c = palette.find(p=>p.code===load.dataset.load);
+      if(c) setCurrentAndJumpToMatch(c.rgb[0],c.rgb[1],c.rgb[2],"hex");
+    }
+  });
+  document.getElementById("hist-list").addEventListener("click", e=>{
+    if(handlePagerClick(e, "hist", fn=>histPage=fn(histPage))) return;
+    const el = e.target.closest("[data-loadhist]");
+    if(!el) return;
+    const h = document.getElementById("hist-list")._data[Number(el.dataset.loadhist)];
+    if(h) setCurrentAndJumpToMatch(...labToRgb(...h.lab),"lab");
+  });
+  document.getElementById("proj-list").addEventListener("click", async e=>{
+    if(handlePagerClick(e, "proj", fn=>projPage=fn(projPage))) return;
+    const loadBtn = e.target.closest("[data-load-proj]");
+    const shareBtn = e.target.closest("[data-share]");
+    const delBtn = e.target.closest("[data-del-proj]");
+    if(loadBtn){
+      const projects = await Store.getProjects();
+      const p = projects.find(x=>x.id===loadBtn.dataset.loadProj);
+      if(p){
+        randomState.colors = p.colors.map(c=>{
+          const rgb = parseHex(c.hex) || [0,0,0];
+          return {r:rgb[0],g:rgb[1],b:rgb[2], code:c.code, hex:c.hex};
+        });
+        randomState.locked = [false,false,false,false,false];
+        randomState.deltas = [null,null,null,null,null];
+        activateTab("random");
+        renderRandomBands();
+      }
+    }
+    if(shareBtn){
+      const url = location.href.split("?")[0] + "?palette=" + shareBtn.dataset.share;
+      copyText(url);
+    }
+    if(delBtn){
+      const projects = await Store.getProjects();
+      const next = projects.filter(x=>x.id!==delBtn.dataset.delProj);
+      await Store.setProjects(next);
+      renderSavedTab();
+    }
+  });
+
+  // ================= stats tab =================
+  const STATS_TOP_N = 20;
+  async function renderStatsTab(){
+    const panel = document.querySelector('.tab-panel[data-panel="stats"]');
+    if(panel.hidden) return;
+    const {counts={}, total=0} = await Store.getStats();
+    document.getElementById("stats-total").textContent = `검색 ${total}건`;
+    const ranked = Object.entries(counts)
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0, STATS_TOP_N);
+    const bars = document.getElementById("stats-bars");
+    if(!ranked.length){
+      bars.innerHTML = `<p class="empty-hint">아직 조회된 색이 없습니다. 컬러 매칭 탭에서 → 버튼(또는 Enter)으로 매칭을 실행하면 여기 집계됩니다.</p>`;
+      return;
+    }
+    const max = Math.max(1, ...ranked.map(([,v])=>v));
+    bars.innerHTML = ranked.map(([code,v])=>{
+      const c = palette.find(p=>p.code===code);
+      const pct = Math.round(v/max*100);
+      const hex = c ? c.hex : "#999999";
+      const name = c ? c.name : "(삭제되었거나 데이터에 없는 코드)";
+      const series = c ? c.series : "";
+      return `<div class="bar-row">
+        <div class="bar-swatch" style="background:${displayHex(hex)}"></div>
+        <div class="bar-label">
+          <span class="code">${escapeHtml(code)}${series?` · ${escapeHtml(series)}`:""}</span>
+          <span class="name">${escapeHtml(name)}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${displayHex(hex)}"></div></div>
+        <span class="bar-count mono">${v}</span>
+      </div>`;
+    }).join("");
+  }
+
+  // ================= shared palette via URL =================
+  async function checkSharedPaletteLink(){
+    const id = new URLSearchParams(location.search).get("palette");
+    if(!id) return;
+    const data = await Store.loadPaletteShared(id);
+    if(!data) return;
+    randomState.colors = data.colors.map(c=>{
+      const rgb = parseHex(c.hex) || [0,0,0];
+      return {r:rgb[0],g:rgb[1],b:rgb[2], code:c.code, hex:c.hex};
+    });
+    randomState.locked = [false,false,false,false,false];
+    randomState.deltas = [null,null,null,null,null];
+    activateTab("random");
+    renderRandomBands();
+    showToast(`공유된 팔레트 "${data.name}"를 불러왔습니다`);
+  }
+
+  // ================= boot =================
+  async function boot(){
+    await Store.init();
+    const favs = await Store.getFavorites();
+    favoritesSet = new Set(favs.map(f=>f.code));
+    // colors-data.js (loaded as a plain <script>) embeds the dummy palette directly,
+    // so matching works with no network/fetch dependency (and no file:// CORS issue).
+    if(Array.isArray(window.SAMHWA_COLORS) && window.SAMHWA_COLORS.length){
+      palette = window.SAMHWA_COLORS;
+      render(null);
+      await checkSharedPaletteLink();
+      return;
+    }
+    // fallback for older deployments that still ship colors.json instead
+    fetch("colors.json").then(r=>r.json()).then(async data=>{
+      palette = data.colors;
+      render(null);
+      await checkSharedPaletteLink();
+    }).catch(()=>{
+      els.list.innerHTML = `<p class="hint" style="padding:8px 4px;">컬러 데이터를 불러오지 못했습니다.</p>`;
+    });
+  }
+
+  if(initAuth()) boot();
+})();
+</script>
